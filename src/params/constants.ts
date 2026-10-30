@@ -1,0 +1,9 @@
+export const TIMEZONE_AMERICA_LIMA = 'America/Lima'
+export const VALOR_MATRICULA: number = 200.0
+export const VALOR_MODULO: number = 150.0
+export const MAX_FILE_IMAGE_2M_SIZE = 2097152;
+export const MAX_FILE_IMAGE_5M_SIZE = 5242880;
+export const MAX_FILE_PDF_SIZE = 52428800;
+export const TIPO_PROGRAMA_ESPECIALIZACION = "especializacion";
+export const TIPO_PROGRAMA_CAPACITACION = "capacitacion";
+export const BASE_STORAGE_URL = "https://api.innovaperu.edu.pe/storage"
