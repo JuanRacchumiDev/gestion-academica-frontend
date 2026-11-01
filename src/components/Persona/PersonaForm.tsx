@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -37,7 +37,14 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { RequiredLabel } from "../Common/RequiredLabel";
 import { Persona, PersonaResponse } from "@/interfaces/IPersona";
-import { ArrowLeft, Save, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  Search,
+  Upload,
+  UserCheck,
+  XCircle,
+} from "lucide-react";
 import {
   createPersona,
   getPersonaById,
@@ -49,6 +56,22 @@ import { ParametroClase } from "@/params/parametroClase";
 interface PersonaFormProps {
   nombreGrupo?: string;
 }
+
+const loadTipoDocumentos = async (): Promise<DetalleParametro[]> => {
+  let dataTipoDocunentos: DetalleParametro[] = [];
+
+  const queryParmas = `parametro_clase=${ParametroClase.TIPO_DOCUMENTO}&en_persona=true&en_empresa=false&estado=true`;
+
+  const response = await getDetalles(queryParmas);
+
+  const { result, data } = response;
+
+  if (result && data) {
+    dataTipoDocunentos = data as DetalleParametro[];
+  }
+
+  return dataTipoDocunentos;
+};
 
 const formSchema = z.object({
   codigoTipoDocumento: z
@@ -69,23 +92,19 @@ const formSchema = z.object({
     message: "El apellido materno es requerido.",
   }),
   fechaNacimiento: z.date().nullable().optional(),
-  // fechaNacimiento: z
-  //   .date({
-  //     message: "La fecha de nacimiento es requerida",
-  //   })
-  //   .nullable()
-  //   .refine((val) => val !== null, {
-  //     message: "La fecha de nacimiento es requerida",
-  //   })
-  //   .optional(),
   sexo: z.string().min(1, {
     message: "El sexo es requerido",
   }),
-  email: z.string().email({
-    message: "Por favor ingrese un email válido",
-  }),
-  // email: z.string().nullable().optional(),
+  email: z
+    .string()
+    .email({ message: "Por favor ingrese un email válido" })
+    .optional()
+    .or(z.literal("")),
+  // email: z.string().email({
+  //   message: "Por favor ingrese un email válido",
+  // }),
   telefono: z.string().nullable().optional(),
+  fotoFile: z.any().optional(),
 });
 
 const defaultValues = {
@@ -98,6 +117,7 @@ const defaultValues = {
   email: "",
   sexo: "",
   telefono: "",
+  fotoFile: null,
 };
 
 export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
@@ -108,7 +128,9 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
   const [camposHabilitados, setCamposHabilitados] = useState(false);
   const [campoFecNacHabilitado, setCampoFecNacHabilitado] = useState(false);
   const [idPersona, setIdPersona] = useState(0);
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isSearchingApi, setIsSearchingApi] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   const isEditMode = !!id;
 
@@ -126,25 +148,28 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
     setCamposHabilitados(false);
     setCampoFecNacHabilitado(false);
     setIdPersona(0);
+    setSelectedFileName(null);
+  };
+
+  const handleEnableManualMode = () => {
+    setCamposHabilitados(true);
+    setCampoFecNacHabilitado(true);
+    showToast(
+      "success",
+      "Modo manual habilitado. Complete los campos requeridos.",
+    );
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
       setIsLoadingData(true);
 
       try {
-        let listTipoDocumentos: DetalleParametro[] = [];
+        const [listTipoDocumentos] = await Promise.all([loadTipoDocumentos()]);
 
-        const queryParmas = `parametro_clase=${ParametroClase.TIPO_DOCUMENTO}&en_persona=true&en_empresa=false&estado=true`;
-
-        const [responseTipoDocumentos] = await Promise.all([
-          getDetalles(queryParmas),
-        ]);
-
-        const { result, data } = responseTipoDocumentos;
-        if (result && data) {
-          listTipoDocumentos = data as DetalleParametro[];
-        }
+        if (!isMounted) return;
         setTipoDocumentos(listTipoDocumentos);
 
         if (isEditMode && id) {
@@ -158,12 +183,12 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
             setCampoFecNacHabilitado(true);
 
             form.reset({
-              codigoTipoDocumento: String(persona.codigo_tipodocumento),
+              codigoTipoDocumento: String(persona.codigo_tipo_documento),
               numeroDocumento: persona.numero_documento,
               nombres: persona.nombres,
               apellidoPaterno: persona.apellido_paterno,
               apellidoMaterno: persona.apellido_materno,
-              email: persona.email,
+              email: persona.email || "",
               sexo: persona.sexo,
               fechaNacimiento: persona.fecha_nacimiento
                 ? parseISO(persona.fecha_nacimiento as string)
@@ -176,12 +201,99 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
         console.error("Error al obtener datos", error);
         showToast("error", "Error al cargar los datos del formulario.");
       } finally {
-        setIsLoadingData(false);
+        if (isMounted) {
+          setIsLoadingData(false); // <--- Oculta el loading una sola vez al terminar la carga inicial
+        }
       }
     };
 
     fetchData();
-  }, [id, isEditMode, form]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleConsultApi = useCallback(
+    async (numeroDoc?: string) => {
+      const docNumber = numeroDoc || form.getValues("numeroDocumento");
+      if (!docNumber || docNumber.length < 8) {
+        showToast(
+          "warning",
+          "Ingrese un número de documento válido de al menos 8 dígitos.",
+        );
+        return;
+      }
+
+      setIsSearchingApi(true);
+      try {
+        showToast("success", "Consultando datos...");
+        const idTipoDoc = form.getValues("codigoTipoDocumento");
+        const tipoDocumento = idTipoDoc === "1" ? "DNI" : "CE";
+        const descGrupo = `grupo-${nombreGrupo}`;
+
+        const responsePersona = await getPersonaByApi(
+          tipoDocumento,
+          docNumber,
+          descGrupo,
+        );
+
+        const { result, data, message } = responsePersona;
+
+        if (result && data) {
+          const persona = data as Persona;
+          const {
+            id,
+            nombres,
+            apellido_paterno,
+            apellido_materno,
+            fecha_nacimiento,
+          } = persona;
+
+          setIdPersona(id || 0);
+          setCamposHabilitados(true);
+
+          form.setValue("nombres", nombres, { shouldValidate: true });
+          form.setValue("apellidoPaterno", apellido_paterno, {
+            shouldValidate: true,
+          });
+          form.setValue("apellidoMaterno", apellido_materno, {
+            shouldValidate: true,
+          });
+
+          if (fecha_nacimiento) {
+            form.setValue("fechaNacimiento", parseISO(fecha_nacimiento), {
+              shouldValidate: true,
+            });
+            setCampoFecNacHabilitado(false); // Bloqueado si viene de RENIEC
+          } else {
+            form.setValue("fechaNacimiento", null, { shouldValidate: true });
+            setCampoFecNacHabilitado(true); // Habilitado si falta la fecha en API
+          }
+
+          showToast(
+            "success",
+            (message as string) || "Datos obtenidos correctamente.",
+          );
+        } else {
+          setCamposHabilitados(true);
+          setCampoFecNacHabilitado(true);
+          showToast(
+            "warning",
+            "No se encontraron registros previos. Complete los datos manualmente.",
+          );
+        }
+      } catch (error) {
+        console.error("Error en consulta API", error);
+        setCamposHabilitados(true);
+        setCampoFecNacHabilitado(true);
+        showToast("error", "Error al consultar el documento en línea.");
+      } finally {
+        setIsSearchingApi(false);
+      }
+    },
+    [form, nombreGrupo, showToast],
+  );
 
   const { isSubmitting } = form.formState;
 
@@ -205,17 +317,17 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
         : "";
 
       const payload: Persona = {
-        codigo_tipodocumento: +codigoTipoDocumento,
+        codigo_tipo_documento: +codigoTipoDocumento,
         numero_documento: numeroDocumento,
         nombres,
         apellido_paterno: apellidoPaterno,
         apellido_materno: apellidoMaterno,
         nombre_completo: nombreCompleto,
         fecha_nacimiento: fechaNacimientoStr,
-        email,
+        email: email || "",
         sexo,
         nombre_grupo: `grupo-${nombreGrupo}`,
-        telefono,
+        telefono: telefono || "",
         estado: true,
       };
 
@@ -303,17 +415,31 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="relative">
-              <div className="flex items-center gap-4 mb-5">
-                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 text-sm font-bold">
-                  01
-                </span>
-                <h3 className="text-lg font-bold text-slate-800">
-                  Información Personal
-                </h3>
-                <div className="h-px bg-slate-200 flex-1"></div>
+            {/* Banner superior de opciones */}
+            {!isEditMode && (
+              <div className="bg-blue-50/70 border border-blue-100 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-blue-900 text-sm">
+                <div className="flex items-center gap-3">
+                  <UserCheck className="h-5 w-5 text-blue-600 shrink-0" />
+                  <span>
+                    Ingrese el documento y pulse{" "}
+                    <strong>"Consultar API"</strong> o haga clic en{" "}
+                    <strong>Registro Manual</strong> para rellenar los datos
+                    libremente.
+                  </span>
+                </div>
+                {!camposHabilitados && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEnableManualMode}
+                    className="border-blue-200 bg-white text-blue-700 hover:bg-blue-100 shrink-0 text-xs font-semibold"
+                  >
+                    Registro Manual
+                  </Button>
+                )}
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
               {/* Tipo de Documento */}
@@ -367,108 +493,47 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
                     <RequiredLabel isRequired={true}>
                       N° de documento
                     </RequiredLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="12345678"
-                        autoComplete="off"
-                        maxLength={8}
-                        disabled={isSubmitting || isEditMode}
-                        {...field}
-                        onKeyDown={async (e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            if (!field.value) return;
-                            try {
-                              showToast("success", "Buscando datos...");
-                              const idTipoDoc = form.getValues(
-                                "codigoTipoDocumento",
-                              );
-                              const tipoDocumento =
-                                idTipoDoc === "1" ? "DNI" : "CE";
-                              const descGrupo = `grupo-${nombreGrupo}`;
-
-                              const responsePersona = await getPersonaByApi(
-                                tipoDocumento,
-                                field.value,
-                                descGrupo,
-                              );
-
-                              // console.log({ responsePersona });
-
-                              const { result, data, message } = responsePersona;
-
-                              if (result && data) {
-                                const persona = data as Persona;
-
-                                const {
-                                  id,
-                                  nombres,
-                                  apellido_paterno,
-                                  apellido_materno,
-                                  fecha_nacimiento,
-                                } = persona;
-
-                                setIdPersona(id);
-
-                                form.setValue("nombres", nombres, {
-                                  shouldValidate: true,
-                                });
-
-                                form.setValue(
-                                  "apellidoPaterno",
-                                  apellido_paterno,
-                                  { shouldValidate: true },
-                                );
-
-                                form.setValue(
-                                  "apellidoMaterno",
-                                  apellido_materno,
-                                  { shouldValidate: true },
-                                );
-
-                                if (fecha_nacimiento) {
-                                  form.setValue(
-                                    "fechaNacimiento",
-                                    parseISO(fecha_nacimiento),
-                                    { shouldValidate: true },
-                                  );
-                                  setCampoFecNacHabilitado(false);
-                                } else {
-                                  form.setValue("fechaNacimiento", null, {
-                                    shouldValidate: true,
-                                  });
-                                  setCampoFecNacHabilitado(true);
-                                }
-
-                                showToast("success", message as string);
-                              } else {
-                                setCamposHabilitados(true);
-
-                                setCampoFecNacHabilitado(true);
-
-                                showToast(
-                                  "warning",
-                                  "No se encontraron registros previos. Complete los datos manualmente.",
-                                );
-                              }
-                            } catch (error) {
-                              setCamposHabilitados(true);
-                              setCampoFecNacHabilitado(true);
-
-                              showToast(
-                                "error",
-                                "Error al consultar el documento.",
-                              );
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input
+                          placeholder="12345678"
+                          autoComplete="off"
+                          maxLength={8}
+                          disabled={isSubmitting || isEditMode}
+                          {...field}
+                          onKeyDown={async (e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleConsultApi(field.value);
                             }
+                          }}
+                          className={`transition-all bg-white ${
+                            fieldState.invalid
+                              ? "border-red-400 focus-visible:ring-red-100"
+                              : "border-slate-200 focus-visible:ring-blue-100 focus-visible:border-blue-500"
+                          }`}
+                        />
+                      </FormControl>
+                      {!isEditMode && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          disabled={
+                            isSubmitting || isSearchingApi || !field.value
                           }
-                        }}
-                        className={`transition-all bg-white ${
-                          fieldState.invalid
-                            ? "border-red-400 focus-visible:ring-red-100"
-                            : "border-slate-200 focus-visible:ring-blue-100 focus-visible:border-blue-500"
-                        }`}
-                      />
-                    </FormControl>
+                          onClick={() => handleConsultApi(field.value)}
+                          title="Consultar en API RENIEC"
+                          className="bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 transition-all shrink-0 px-3"
+                        >
+                          {isSearchingApi ? (
+                            <Spinner className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Search className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
+
                     <FormMessage className="text-xs font-medium text-red-500" />
                   </FormItem>
                 )}
@@ -575,12 +640,15 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
                             e.target.value ? parseISO(e.target.value) : null,
                           )
                         }
-                        disabled={!campoFecNacHabilitado || isSubmitting}
+                        disabled={
+                          (!campoFecNacHabilitado && !isEditMode) ||
+                          isSubmitting
+                        }
                         className={`transition-all ${
                           fieldState.invalid
                             ? "border-red-400 focus-visible:ring-red-100"
                             : "border-slate-200 focus-visible:ring-blue-100 focus-visible:border-blue-500"
-                        } ${!campoFecNacHabilitado ? "bg-slate-50 text-slate-500 cursor-not-allowed" : "bg-white"}`}
+                        } ${!campoFecNacHabilitado && !isEditMode ? "bg-slate-50 text-slate-500 cursor-not-allowed" : "bg-white"}`}
                       />
                     </FormControl>
                     <FormMessage className="text-xs font-medium text-red-500" />
@@ -603,6 +671,7 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
                         autoComplete="off"
                         maxLength={60}
                         {...field}
+                        value={field.value ?? ""}
                         disabled={isSubmitting}
                         className={`transition-all bg-white ${
                           fieldState.invalid
@@ -662,6 +731,7 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
                         autoComplete="off"
                         maxLength={9}
                         {...field}
+                        value={field.value ?? ""}
                         disabled={isSubmitting}
                         className={`transition-all bg-white ${
                           fieldState.invalid
@@ -669,6 +739,55 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
                             : "border-slate-200 focus-visible:ring-blue-100 focus-visible:border-blue-500"
                         }`}
                       />
+                    </FormControl>
+                    <FormMessage className="text-xs font-medium text-red-500" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="fotoFile"
+                render={({ field: { onChange, value, ...rest } }) => (
+                  <FormItem className="w-full">
+                    <RequiredLabel isRequired={false}>Fotografía</RequiredLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 flex items-center justify-between px-3 py-2 border border-slate-200 rounded-md bg-white cursor-pointer hover:bg-slate-50 transition-colors">
+                          <span className="text-xs text-slate-500 truncate">
+                            {selectedFileName || "Seleccionar imagen..."}
+                          </span>
+                          <Upload className="h-4 w-4 text-slate-400 shrink-0 ml-2" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setSelectedFileName(file.name);
+                                onChange(file);
+                              }
+                            }}
+                            {...rest}
+                          />
+                        </label>
+                        {selectedFileName && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedFileName(null);
+                              onChange(null);
+                            }}
+                            className="text-red-500 hover:bg-red-50 px-2"
+                            title="Quitar archivo"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </FormControl>
                     <FormMessage className="text-xs font-medium text-red-500" />
                   </FormItem>

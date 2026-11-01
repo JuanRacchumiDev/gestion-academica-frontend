@@ -4,7 +4,7 @@ import { Matricula } from './IMatricula';
 
 export interface Persona {
     id?: number
-    codigo_tipodocumento?: number
+    codigo_tipo_documento?: number
     numero_documento?: string
     nombres?: string
     apellido_paterno?: string

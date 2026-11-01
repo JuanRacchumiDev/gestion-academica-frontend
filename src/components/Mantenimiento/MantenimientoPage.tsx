@@ -11,6 +11,9 @@ import { PeriodoAcademicoList } from "./PeriodoAcademico/PeriodoAcademicoList";
 import { PeriodoAcademicoForm } from "./PeriodoAcademico/PeriodoAcademicoForm";
 import { PeriodoEvaluacionList } from "./PeriodoEvaluacion/PeriodoEvaluacionList";
 import { PeriodoEvaluacionForm } from "./PeriodoEvaluacion/PeriodoEvaluacionForm";
+import { GradoAcademicoList } from "./GradoAcademico/GradoAcademicoList";
+import { ParentescoList } from "./Parentesco/ParentescoList";
+import { GradoAcademicoForm } from "./GradoAcademico/GradoAcademicoForm";
 
 export const MantenimientoPage = () => {
   return (
@@ -60,6 +63,15 @@ export const MantenimientoPage = () => {
           path="/periodo-evaluacion/editar/:id"
           element={<PeriodoEvaluacionForm />}
         />
+
+        <Route path="/grado-academico" element={<GradoAcademicoList />}></Route>
+        <Route path="/grado-academico/nuevo" element={<GradoAcademicoForm />} />
+        <Route
+          path="/grado-academico/editar/:id"
+          element={<GradoAcademicoForm />}
+        />
+
+        <Route path="/parentesco" element={<ParentescoList />}></Route>
       </Routes>
     </div>
   );

@@ -28,11 +28,25 @@ export const ADMIN_MENU_ITEMS = [
         path: "/personas/alumno"
     },
     {
-        id: "programa-academico",
-        icon: BookOpen,
-        label: "Programa",
+        id: "colaborador",
+        icon: UserIcon,
+        label: "Colaborador",
         active: false,
-        path: "/programa-academico"
+        path: "/personas/colaborador"
+    },
+    {
+        id: "apoderado",
+        icon: UserIcon,
+        label: "Apoderado",
+        active: false,
+        path: "/personas/apoderado"
+    },
+    {
+        id: "curso",
+        icon: BookOpen,
+        label: "Curso",
+        active: false,
+        path: "/curso"
     },
     {
         id: "matricula",
@@ -55,20 +69,20 @@ export const ADMIN_MENU_ITEMS = [
         active: false,
         path: "/adjunto"
     },
-    {
-        id: "certificado",
-        icon: Award,
-        label: "Certificado",
-        active: false,
-        path: "/certificado"
-    },
-    {
-        id: "plantilla",
-        icon: FileCheck,
-        label: "Plantilla",
-        active: false,
-        path: "/plantilla"
-    },
+    // {
+    //     id: "certificado",
+    //     icon: Award,
+    //     label: "Certificado",
+    //     active: false,
+    //     path: "/certificado"
+    // },
+    // {
+    //     id: "plantilla",
+    //     icon: FileCheck,
+    //     label: "Plantilla",
+    //     active: false,
+    //     path: "/plantilla"
+    // },
     {
         id: "usuario",
         icon: UserCog,
@@ -94,11 +108,18 @@ export const ADMIN_MENU_ITEMS = [
                 path: "/mantenimiento/periodo-evaluacion"
             },
             {
+                id: "grado-academico",
+                label: "Grado Académico",
+                icon: Layers,
+                path: "/mantenimiento/grado-academico"
+            },
+            {
                 id: "parentesco",
                 label: "Parentesco",
                 icon: Layers,
                 path: "/mantenimiento/parentesco"
             },
+
             // {
             //     id: "segmento",
             //     label: "Segmento",

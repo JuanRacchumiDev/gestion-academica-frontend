@@ -38,7 +38,7 @@ import { ParametroClase } from "@/params/parametroClase";
 
 const getCodigoEstadoAcademico = async (): Promise<number> => {
   let codigoEstado: number = 0;
-  const queryParams = `parametro_clase=${ParametroClase.ESTADO_PERIODO_ACADEMICO}&nombre_url=activo`;
+  const queryParams = `parametro_clase=${ParametroClase.PERIODO_ACADEMICO}&nombre_url=activo`;
   console.log({ queryParams });
   const responseDetalle = await getDetalleByParams(queryParams);
   console.log({ responseDetalle });
@@ -213,7 +213,7 @@ export const PeriodoAcademicoForm = () => {
                     <RequiredLabel isRequired={true}>Nombre</RequiredLabel>
                     <FormControl>
                       <Input
-                        placeholder="Economía"
+                        placeholder="Año académico 2026"
                         autoComplete="off"
                         maxLength={100}
                         {...field}

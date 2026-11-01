@@ -67,13 +67,6 @@ import { VALOR_MODULO } from "@/params/constants";
 const loadFormasPago = async () => {
   let formasPago: DetalleParametro[] = [];
 
-  // const filters: DetalleParametroFilters = {
-  //   parametro_clase: ParametroClase.FORMA_PAGO,
-  //   en_persona: false,
-  //   en_empresa: false,
-  //   estado: true,
-  // };
-
   const queryParams = `parametro_clase=${ParametroClase.FORMA_PAGO}&en_persona=false&en_empresa=false&estado=true`;
 
   const response = await getDetalles(queryParams);

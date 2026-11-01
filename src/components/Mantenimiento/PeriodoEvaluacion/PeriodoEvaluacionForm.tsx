@@ -31,14 +31,24 @@ import {
 import { DetalleParametro } from "../../../interfaces/IDetalleParametro";
 import { useToast } from "../../../context/ToastContext";
 import { RequiredLabel } from "../../../components/Common/RequiredLabel";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Save } from "lucide-react";
-import { getDetalleByParams } from "@/services/detalleParametroService";
+import {
+  getDetalleByParams,
+  getDetalles,
+} from "@/services/detalleParametroService";
 import { ParametroClase } from "@/params/parametroClase";
 import { PeriodoAcademico } from "@/interfaces/IPeriodoAcademico";
 import { getPeriodos } from "../../../services/periodoAcademicoService";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const loadPeriodosAcademicos = async (): Promise<PeriodoAcademico[]> => {
+const loadPeriodos = async (): Promise<PeriodoAcademico[]> => {
   let periodos: PeriodoAcademico[] = [];
 
   const queryParams = `estado=true`;
@@ -58,13 +68,13 @@ const loadPeriodosAcademicos = async (): Promise<PeriodoAcademico[]> => {
   }
 };
 
-const loadTipoPeriodosEvaluacion = async (): Promise<DetalleParametro[]> => {
+const loadTipoPeriodos = async (): Promise<DetalleParametro[]> => {
   let tipos: DetalleParametro[] = [];
 
-  const queryParams = `parametro_clase=${ParametroClase.ESTADO_TIPO_PERIODO_ACADEMICO}&estado=true`;
+  const queryParams = `parametro_clase=${ParametroClase.TIPO_PERIODO_ACADEMICO}&en_persona=false&en_empresa=false&estado=true`;
 
   try {
-    const response = await getDetalleByParams(queryParams);
+    const response = await getDetalles(queryParams);
 
     const { result, data } = response;
 
@@ -81,7 +91,7 @@ const loadTipoPeriodosEvaluacion = async (): Promise<DetalleParametro[]> => {
 
 const getCodigoTipoPeriodocademico = async (): Promise<number> => {
   let codigoEstado: number = 0;
-  const queryParams = `parametro_clase=${ParametroClase.ESTADO_TIPO_PERIODO_ACADEMICO}&nombre_url=activo`;
+  const queryParams = `parametro_clase=${ParametroClase.TIPO_PERIODO_ACADEMICO}&nombre_url=activo`;
   console.log({ queryParams });
   const responseDetalle = await getDetalleByParams(queryParams);
   console.log({ responseDetalle });
@@ -122,6 +132,8 @@ export const PeriodoEvaluacionForm = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { showToast } = useToast();
+  const [periodos, setPeriodos] = useState<PeriodoAcademico[]>([]);
+  const [tipoPeriodos, setTipoPeriodos] = useState<DetalleParametro[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -158,6 +170,8 @@ export const PeriodoEvaluacionForm = () => {
       let response: PeriodoEvaluacionResponse;
 
       const payloadData: PeriodoEvaluacion = {
+        id_periodo_academico: +values.idPeriodoAcademico,
+        codigo_tipo_periodo_academico: +values.codigoTipoPeriodo,
         nombre: values.nombre,
         fecha_inicio: values.fecha_inicio,
         fecha_final: values.fecha_final,
@@ -201,7 +215,14 @@ export const PeriodoEvaluacionForm = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (isEditMode) {
+        const [listPeriodo, listTipoPeriodo] = await Promise.all([
+          loadPeriodos(),
+          loadTipoPeriodos(),
+        ]);
+        setPeriodos(listPeriodo);
+        setTipoPeriodos(listTipoPeriodo);
+
+        if (isEditMode && id) {
           const responsePeriodo = await getPeriodoById(+id);
 
           const { result, data, message } = responsePeriodo;
@@ -210,6 +231,9 @@ export const PeriodoEvaluacionForm = () => {
             const periodo = data as PeriodoEvaluacion;
 
             form.reset({
+              idPeriodoAcademico: String(periodo.id_periodo_academico) || "",
+              codigoTipoPeriodo:
+                String(periodo.codigo_tipo_periodo_academico) || "",
               nombre: periodo.nombre,
               fecha_inicio: periodo.fecha_inicio || "",
               fecha_final: periodo.fecha_final || "",
@@ -232,7 +256,7 @@ export const PeriodoEvaluacionForm = () => {
     };
 
     fetchData();
-  }, [id, isEditMode, form, navigate, showToast]);
+  }, [id, isEditMode]);
 
   return (
     <div className="flex justify-center w-full mx-auto max-w-lg">
@@ -273,7 +297,7 @@ export const PeriodoEvaluacionForm = () => {
                     <RequiredLabel isRequired={true}>Nombre</RequiredLabel>
                     <FormControl>
                       <Input
-                        placeholder="Economía"
+                        placeholder="I BEMESTRE"
                         autoComplete="off"
                         maxLength={100}
                         {...field}
@@ -284,6 +308,86 @@ export const PeriodoEvaluacionForm = () => {
                         }`}
                       />
                     </FormControl>
+                    <FormMessage className="text-xs font-medium text-red-500" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="idPeriodoAcademico"
+                render={({ field, fieldState }) => (
+                  <FormItem className="w-full">
+                    <RequiredLabel isRequired={true}>
+                      Periodo Académico
+                    </RequiredLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value ?? ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger
+                          className={`w-full transition-all bg-white ${
+                            fieldState.invalid
+                              ? "border-red-400 focus:ring-red-100"
+                              : "border-slate-200 focus:ring-blue-100 focus:border-blue-500"
+                          }`}
+                        >
+                          <SelectValue placeholder="Seleccionar periodo académico" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white text-xs border border-slate-200 shadow-md outline-none">
+                        {periodos.map((periodo) => (
+                          <SelectItem
+                            value={periodo.id!.toString()}
+                            key={periodo.id!.toString()}
+                            className="cursor-pointer hover:bg-blue-50 focus:bg-blue-100 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold transition-colors"
+                          >
+                            {periodo.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-xs font-medium text-red-500" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="codigoTipoPeriodo"
+                render={({ field, fieldState }) => (
+                  <FormItem className="w-full">
+                    <RequiredLabel isRequired={true}>
+                      Tipo periodo
+                    </RequiredLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value ?? ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger
+                          className={`w-full transition-all bg-white ${
+                            fieldState.invalid
+                              ? "border-red-400 focus:ring-red-100"
+                              : "border-slate-200 focus:ring-blue-100 focus:border-blue-500"
+                          }`}
+                        >
+                          <SelectValue placeholder="Seleccionar tipo periodo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white text-xs border border-slate-200 shadow-md outline-none">
+                        {tipoPeriodos.map((tipoPeriodo) => (
+                          <SelectItem
+                            value={tipoPeriodo.codigo.toString()}
+                            key={tipoPeriodo.codigo!.toString()}
+                            className="cursor-pointer hover:bg-blue-50 focus:bg-blue-100 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold transition-colors"
+                          >
+                            {tipoPeriodo.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage className="text-xs font-medium text-red-500" />
                   </FormItem>
                 )}
