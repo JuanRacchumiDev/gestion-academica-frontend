@@ -27,7 +27,7 @@ export const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
 
             <div className="space-y-1">
               <h1 className="text-2xl font-black tracking-tight text-white">
-                INNOVAPERÚ
+                LOS AMAUTAS
               </h1>
               <p className="text-xs text-indigo-200/80">
                 Sistema Integral de Gestión Académica
@@ -50,7 +50,7 @@ export const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
           {/* Footer del Branding */}
           <div className="relative z-10 pt-4 border-t border-indigo-800/40">
             <p className="text-[11px] text-indigo-300/60">
-              © {new Date().getFullYear()} InnovaPerú. Todos los derechos
+              © {new Date().getFullYear()} LOS AMAUTAS. Todos los derechos
               reservados.
             </p>
           </div>
@@ -63,14 +63,14 @@ export const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
             <div className="text-center space-y-1">
               {/* Contenedor flex siempre centrado horizontalmente */}
               <div className="flex items-center justify-center mb-3">
-                <img
+                {/* <img
                   src="/LOGO_INNOVAPERU2.jpeg"
                   alt="InnovaPerú"
                   className="h-22 w-60 max-w-full object-contain rounded-md mx-auto"
-                />
+                /> */}
 
                 <span className="text-xl font-bold text-slate-900 tracking-tight md:hidden">
-                  INNOVAPERÚ
+                  LOS AMAUTAS
                 </span>
               </div>
 

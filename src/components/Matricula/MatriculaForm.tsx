@@ -127,9 +127,9 @@ export const formSchema = z
     montoEfectivoModulo: z.number().catch(0),
     montoOperacionModulo: z.number().catch(0),
 
-    programas: z
-      .array(ProgramaMatriculaSchema)
-      .min(1, "Debe agregar al menos un programa"),
+    // programas: z
+    //   .array(ProgramaMatriculaSchema)
+    //   .min(1, "Debe agregar al menos un programa"),
   })
   .superRefine((data, ctx) => {
     // ----------------------------------------------------
@@ -282,7 +282,7 @@ const loadAlumnos = async () => {
 const loadInstituciones = async () => {
   let instituciones: Institucion[] = [];
 
-  const queryParams = `is_cliente=false`;
+  const queryParams = `is_cliente=false&estado=true`;
 
   const response = await getInstituciones(queryParams);
 
@@ -584,12 +584,12 @@ export const MatriculaForm = () => {
               montoOperacionModulo: cantidadOperacionModulo ?? 0,
               numeroOperacionModulo: numeroOperacionModulo ?? "",
 
-              programas: detalles
-                ? detalles.map((p: DetalleMatricula) => ({
-                    idTipoPrograma: +p.programa.codigo_tipoprograma,
-                    idPrograma: p.programa.id.toString(),
-                  }))
-                : [{ idTipoPrograma: 0, idPrograma: "" }],
+              // programas: detalles
+              //   ? detalles.map((p: DetalleMatricula) => ({
+              //       idTipoPrograma: +p.programa.codigo_tipoprograma,
+              //       idPrograma: p.programa.id.toString(),
+              //     }))
+              //   : [{ idTipoPrograma: 0, idPrograma: "" }],
             });
           }
         }
@@ -704,7 +704,7 @@ export const MatriculaForm = () => {
         numeroOperacionMatricula,
         numeroOperacionModulo,
         pagarPrimerModulo,
-        programas,
+        // programas,
       } = values;
 
       const totalIngresado =
@@ -718,14 +718,14 @@ export const MatriculaForm = () => {
         return;
       }
 
-      const programaIds: number[] = programas
-        .filter((p) => p.idPrograma !== "")
-        .map((p) => +p.idPrograma);
+      // const programaIds: number[] = programas
+      //   .filter((p) => p.idPrograma !== "")
+      //   .map((p) => +p.idPrograma);
 
-      if (programaIds.length === 0) {
-        showToast("error", "Debe agregar al menos un programa válido");
-        return;
-      }
+      // if (programaIds.length === 0) {
+      //   showToast("error", "Debe agregar al menos un programa válido");
+      //   return;
+      // }
 
       const targetFormaPagoMat = formasPago.find(
         (f) =>
@@ -745,7 +745,7 @@ export const MatriculaForm = () => {
         id_sucursal: +idInstitucion,
         fecha_matricula: fechaMatriculaStr,
         codigo_estadomatricula: 39, // Estado matrícula ACTIVA por defecto
-        programas: programaIds,
+        // programas: programaIds,
 
         // Asignación estructurada Matrícula
         monto_matricula: montoMatricula,
@@ -948,15 +948,14 @@ export const MatriculaForm = () => {
               </div>
             </div>
 
-            {/* SECCIÓN 02: SELECCIÓN DE PROGRAMAS */}
-            <div className="space-y-6">
+            {/* <div className="space-y-6">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-4 flex-1">
                   <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-800 text-white text-[10px] font-semibold">
                     2
                   </span>
                   <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Programas de Matrícula
+                    REGISTRO DE PAGOS
                   </h3>
                   <div className="h-px bg-slate-100 flex-1"></div>
                 </div>
@@ -984,7 +983,6 @@ export const MatriculaForm = () => {
                       key={fieldItem.id}
                       className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end p-4 border border-gray-100 bg-gray-50/50 rounded-xl w-full"
                     >
-                      {/* Tipo Programa */}
                       <div className="md:col-span-4 w-full">
                         <FormField
                           control={form.control}
@@ -1032,7 +1030,6 @@ export const MatriculaForm = () => {
                         />
                       </div>
 
-                      {/* Programa Combo */}
                       <div className="md:col-span-7 w-full">
                         <FormField
                           control={form.control}
@@ -1066,7 +1063,6 @@ export const MatriculaForm = () => {
                         />
                       </div>
 
-                      {/* Botón Eliminar */}
                       <div className="md:col-span-1 flex justify-end">
                         {fields.length > 1 && (
                           <Button
@@ -1085,14 +1081,13 @@ export const MatriculaForm = () => {
                   );
                 })}
               </div>
-            </div>
+            </div> */}
 
-            {/* SECCIÓN 01: CONFIGURACIÓN MÓDULO & SWITCH DE PAGO */}
             <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-6">
               <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                 <div className="flex items-center gap-2 text-indigo-900 font-bold">
                   <BookOpen className="h-5 w-5 text-indigo-600" />
-                  <h3>Configuración de Módulos del Programa</h3>
+                  <h3>Configuración de Pagos</h3>
                 </div>
                 <span className="text-xs bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-md font-medium flex items-center gap-1">
                   <Info className="h-3.5 w-3.5" /> Valor Base Referencial: S/.{" "}
@@ -1101,14 +1096,13 @@ export const MatriculaForm = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* 1. N° Módulos */}
                 <FormField
                   control={form.control}
                   name="numeroModulos"
                   render={({ field, fieldState }) => (
                     <FormItem>
                       <RequiredLabel isRequired={true}>
-                        N° Total de Módulos
+                        N° Total de Meses
                       </RequiredLabel>
                       <FormControl>
                         <Input
@@ -1138,7 +1132,7 @@ export const MatriculaForm = () => {
                   render={({ field, fieldState }) => (
                     <FormItem>
                       <RequiredLabel isRequired={true}>
-                        Costo Unitario Módulo (S/.)
+                        Monto por mes (S/.)
                       </RequiredLabel>
                       <FormControl>
                         <Input
@@ -1165,7 +1159,7 @@ export const MatriculaForm = () => {
                 {/* Resumen del Valor General */}
                 <div className="flex flex-col justify-center bg-white p-3 rounded-xl border border-slate-200/60 shadow-sm">
                   <span className="text-xs text-slate-500 font-medium">
-                    Monto Esperado Módulos ({watchNumeroModulos} × S/.{" "}
+                    Monto Esperado Mes ({watchNumeroModulos} × S/.{" "}
                     {watchMontoPorModulo.toFixed(2)}):
                   </span>
                   <span className="text-lg font-bold text-slate-800">
@@ -1183,7 +1177,7 @@ export const MatriculaForm = () => {
                     <FormItem className="flex flex-row items-center justify-between rounded-xl bg-white p-4 border border-indigo-100 shadow-sm">
                       <div className="space-y-0.5">
                         <FormLabel className="text-base font-bold text-slate-800 cursor-pointer">
-                          ¿Registrar Pago del Primer Módulo Ahora?
+                          ¿Registrar Pago del Primer Mes Ahora?
                         </FormLabel>
                         <p className="text-xs text-slate-500">
                           Active esta casilla únicamente si el alumno va a
@@ -1203,9 +1197,7 @@ export const MatriculaForm = () => {
               </div>
             </div>
 
-            {/* SECCIÓN 02: PAGO DE MATRÍCULA Y MÓDULO */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-2">
-              {/* BLOQUE A: PAGO DE MATRÍCULA (SIEMPRE VISIBLE Y REQUERIDO) */}
               <div className="p-6 border border-blue-100 bg-blue-50/20 rounded-2xl space-y-4 shadow-sm flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-blue-700 font-bold border-b border-blue-100 pb-3">
@@ -1339,10 +1331,10 @@ export const MatriculaForm = () => {
                     <div className="flex items-center justify-between text-emerald-700 font-bold border-b border-emerald-100 pb-3">
                       <div className="flex items-center gap-2">
                         <BookOpen className="h-5 w-5" />
-                        <h4>Pago del Primer Módulo</h4>
+                        <h4>Pago del Primer Mes</h4>
                       </div>
                       <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md flex items-center gap-1 font-semibold">
-                        <Info className="h-3.5 w-3.5" /> Por Módulo: S/.{" "}
+                        <Info className="h-3.5 w-3.5" /> Por Mes: S/.{" "}
                         {watchMontoPorModulo.toFixed(2)}
                       </span>
                     </div>
@@ -1352,7 +1344,7 @@ export const MatriculaForm = () => {
                       name="codigoFormaPagoModulo"
                       render={({ field }) => (
                         <FormItem>
-                          <RequiredLabel>Forma de Pago Módulo</RequiredLabel>
+                          <RequiredLabel>Forma de Pago Mes</RequiredLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
@@ -1478,9 +1470,7 @@ export const MatriculaForm = () => {
               )}
             </div>
 
-            {/* RESUMEN Y TOTAL CONSOLIDADO */}
             <div className="p-4 sm:p-5 bg-slate-900 text-white rounded-2xl shadow-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6">
-              {/* Sección izquierda: Icono y desglose */}
               <div className="flex items-center gap-3.5">
                 <div className="p-2.5 bg-white/10 rounded-xl text-blue-400 shrink-0">
                   <Calculator className="h-7 w-7" />

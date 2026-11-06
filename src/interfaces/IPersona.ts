@@ -5,6 +5,7 @@ import { Matricula } from './IMatricula';
 export interface Persona {
     id?: number
     codigo_tipo_documento?: number
+    codigo_perfil?: number
     numero_documento?: string
     nombres?: string
     apellido_paterno?: string
@@ -29,6 +30,7 @@ export interface Persona {
     estado?: boolean
     tipo_documento?: DetalleParametro
     grupos?: DetalleParametro[]
+    perfil?: DetalleParametro
     matriculas?: Matricula[]
     certificados?: Certificado[]
 }

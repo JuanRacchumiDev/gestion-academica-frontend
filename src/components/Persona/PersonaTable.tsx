@@ -163,6 +163,9 @@ export const PersonaTable: React.FC<PersonaTableProps> = ({ nombreGrupo }) => {
                   Número documento
                 </TableHead>
                 <TableHead className="w-[15%] py-2.5 px-3 text-slate-500 font-medium text-[11px] uppercase tracking-wider">
+                  ROL
+                </TableHead>
+                <TableHead className="w-[15%] py-2.5 px-3 text-slate-500 font-medium text-[11px] uppercase tracking-wider">
                   Email
                 </TableHead>
                 <TableHead className="w-[8%] py-2.5 px-3 text-slate-500 font-medium text-[11px] uppercase tracking-wider">
@@ -179,7 +182,7 @@ export const PersonaTable: React.FC<PersonaTableProps> = ({ nombreGrupo }) => {
 
             <TableBody>
               {isLoading ? (
-                <TableSpinner colSpan={7} />
+                <TableSpinner colSpan={8} />
               ) : personas.length > 0 ? (
                 personas.map((persona) => (
                   <PersonaRow
@@ -190,7 +193,7 @@ export const PersonaTable: React.FC<PersonaTableProps> = ({ nombreGrupo }) => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={8} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center text-slate-400 space-y-1">
                       <span className="text-xs font-medium text-slate-600">
                         No se encontraron registros

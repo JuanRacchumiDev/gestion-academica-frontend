@@ -58,7 +58,7 @@ interface PersonaFormProps {
 }
 
 const loadTipoDocumentos = async (): Promise<DetalleParametro[]> => {
-  let dataTipoDocunentos: DetalleParametro[] = [];
+  let dataTipoDocumentos: DetalleParametro[] = [];
 
   const queryParmas = `parametro_clase=${ParametroClase.TIPO_DOCUMENTO}&en_persona=true&en_empresa=false&estado=true`;
 
@@ -67,10 +67,30 @@ const loadTipoDocumentos = async (): Promise<DetalleParametro[]> => {
   const { result, data } = response;
 
   if (result && data) {
-    dataTipoDocunentos = data as DetalleParametro[];
+    dataTipoDocumentos = data as DetalleParametro[];
   }
 
-  return dataTipoDocunentos;
+  return dataTipoDocumentos;
+};
+
+const loadPerfiles = async (): Promise<DetalleParametro[]> => {
+  let dataPerfiles: DetalleParametro[] = [];
+
+  try {
+    const queryParams = `parametro_clase=${ParametroClase.PERFIL}&en_persona=false&en_empresa=false&estado=true`;
+    const response = await getDetalles(queryParams);
+
+    const { result, data } = response;
+
+    if (result && data) {
+      dataPerfiles = data as DetalleParametro[];
+    }
+
+    return dataPerfiles;
+  } catch (error) {
+    console.error("Error al cargar perfiles:", error);
+    return [];
+  }
 };
 
 const formSchema = z.object({
@@ -79,6 +99,11 @@ const formSchema = z.object({
       message: "El tipo de documento es requerido.",
     })
     .min(1, "El tipo de documento es requerido."),
+  codigoPerfil: z
+    .string({
+      message: "El perfil es requerido",
+    })
+    .min(1, "El perfil es requerido"),
   numeroDocumento: z.string().min(8, {
     message: "El número de documento debe tener al menos 8 caracteres.",
   }),
@@ -109,6 +134,7 @@ const formSchema = z.object({
 
 const defaultValues = {
   codigoTipoDocumento: "1",
+  codigoPerfil: "",
   numeroDocumento: "",
   nombres: "",
   apellidoPaterno: "",
@@ -125,6 +151,7 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
   const { id } = useParams<{ id: string }>();
   const { showToast } = useToast();
   const [tipoDocumentos, setTipoDocumentos] = useState<DetalleParametro[]>([]);
+  const [perfiles, setPerfiles] = useState<DetalleParametro[]>([]);
   const [camposHabilitados, setCamposHabilitados] = useState(false);
   const [campoFecNacHabilitado, setCampoFecNacHabilitado] = useState(false);
   const [idPersona, setIdPersona] = useState(0);
@@ -167,10 +194,24 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
       setIsLoadingData(true);
 
       try {
-        const [listTipoDocumentos] = await Promise.all([loadTipoDocumentos()]);
+        const [listTipoDocumentos, listPerfiles] = await Promise.all([
+          loadTipoDocumentos(),
+          loadPerfiles(),
+        ]);
 
         if (!isMounted) return;
+
         setTipoDocumentos(listTipoDocumentos);
+        setPerfiles(listPerfiles);
+
+        console.log({ perfiles });
+
+        // Si hay una única opción en perfiles, seleccionarla por defecto
+        if (listPerfiles.length === 1 && listPerfiles[0].codigo) {
+          form.setValue("codigoPerfil", listPerfiles[0].codigo.toString(), {
+            shouldValidate: true,
+          });
+        }
 
         if (isEditMode && id) {
           const responsePersona = await getPersonaById(+id);
@@ -184,6 +225,9 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
 
             form.reset({
               codigoTipoDocumento: String(persona.codigo_tipo_documento),
+              codigoPerfil: persona.codigo_perfil
+                ? String(persona.codigo_perfil)
+                : "",
               numeroDocumento: persona.numero_documento,
               nombres: persona.nombres,
               apellidoPaterno: persona.apellido_paterno,
@@ -301,6 +345,7 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
     try {
       const {
         codigoTipoDocumento,
+        codigoPerfil,
         numeroDocumento,
         nombres,
         apellidoMaterno,
@@ -318,6 +363,7 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
 
       const payload: Persona = {
         codigo_tipo_documento: +codigoTipoDocumento,
+        codigo_perfil: +codigoPerfil,
         numero_documento: numeroDocumento,
         nombres,
         apellido_paterno: apellidoPaterno,
@@ -379,6 +425,19 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
     }
   };
 
+  if (isLoadingData) {
+    return (
+      <Card className="shadow-xl border-none bg-white min-h-[400px] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Spinner className="h-10 w-10 text-blue-600 animate-spin" />
+          <p className="text-sm font-medium text-slate-500">
+            Cargando formulario...
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="shadow-xl border-none bg-white">
       <CardHeader className="border-b border-gray-100 p-6 flex flex-row items-center justify-between bg-gray-50/50 rounded-t-xl">
@@ -407,12 +466,6 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
       </CardHeader>
 
       <CardContent className="px-6 sm:px-8 relative">
-        {isLoadingData && (
-          <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-10">
-            <Spinner className="h-8 w-8 text-blue-600 animate-spin" />
-          </div>
-        )}
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Banner superior de opciones */}
@@ -475,6 +528,46 @@ export const PersonaForm: React.FC<PersonaFormProps> = ({ nombreGrupo }) => {
                             className="cursor-pointer hover:bg-blue-50 focus:bg-blue-100 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold transition-colors"
                           >
                             {tipo.descripcion}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-xs font-medium text-red-500" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Perfil del Usuario */}
+              <FormField
+                control={form.control}
+                name="codigoPerfil"
+                render={({ field, fieldState }) => (
+                  <FormItem className="w-full">
+                    <RequiredLabel isRequired={true}>Perfil</RequiredLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value ?? ""}
+                      disabled={isSubmitting || perfiles.length === 1}
+                    >
+                      <FormControl>
+                        <SelectTrigger
+                          className={`w-full transition-all bg-white ${
+                            fieldState.invalid
+                              ? "border-red-400 focus:ring-red-100"
+                              : "border-slate-200 focus:ring-blue-100 focus:border-blue-500"
+                          }`}
+                        >
+                          <SelectValue placeholder="Seleccionar perfil" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white text-xs border border-slate-200 shadow-md outline-none">
+                        {perfiles.map((perfil) => (
+                          <SelectItem
+                            value={perfil.codigo!.toString()}
+                            key={perfil.codigo!.toString()}
+                            className="cursor-pointer hover:bg-blue-50 focus:bg-blue-100 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold transition-colors"
+                          >
+                            {perfil.nombre}
                           </SelectItem>
                         ))}
                       </SelectContent>

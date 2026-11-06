@@ -4,7 +4,9 @@ import {
     getAllPaginate,
     getById,
     create,
-    update
+    update,
+    vincularHijos as repoVincularHijos,
+    VincularHijosPayload
 } from "../repositories/personaRepository"
 
 export const getPersonas = async (nombreGrupo: string) => {
@@ -59,6 +61,16 @@ export const getPersonaById = async (id: number) => {
         ...response
     }
 }
+
+export const vincularHijosPersona = async (id: number, payload: VincularHijosPayload) => {
+    const response = await repoVincularHijos(id, payload);
+    console.log('response vincularHijosPersona');
+    console.log({ response });
+
+    return {
+        ...response
+    };
+};
 
 export const createPersona = async (payload: Persona) => {
     const response = await create(payload)

@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   ToggleLeft,
   ToggleRight,
+  Users,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -22,6 +23,7 @@ import { Button } from "../ui/button";
 import { useToast } from "../../context/ToastContext";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/Common/ConfirmDialog";
+import { VinculaParienteModal } from "./VincularParienteModal";
 
 interface Props {
   persona: Persona;
@@ -32,6 +34,7 @@ export const PersonaRow: React.FC<Props> = ({ persona, grupo }) => {
   const { showToast } = useToast();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
 
@@ -42,6 +45,11 @@ export const PersonaRow: React.FC<Props> = ({ persona, grupo }) => {
 
   const handleShowDetail = () => {
     navigate(`/personas/${grupo}/editar/${persona.id}`);
+  };
+
+  const handleOpenVincularModal = () => {
+    setIsDropdownOpen(false);
+    setIsVincularModalOpen(true);
   };
 
   const handleOpenStatusModal = (event: React.MouseEvent) => {
@@ -74,9 +82,10 @@ export const PersonaRow: React.FC<Props> = ({ persona, grupo }) => {
     ? "hover:bg-rose-50"
     : "hover:bg-emerald-50";
 
+  const esApoderado = grupo.toLowerCase() === "apoderado";
+
   return (
     <>
-      {/* Relleno py-3 reducido a py-2 (Compact layout) y cambio de hover-color a slate sutil */}
       <TableRow
         key={persona.id}
         className="hover:bg-slate-50/80 hover:cursor-pointer transition-colors duration-150 border-b border-slate-100"
@@ -89,6 +98,9 @@ export const PersonaRow: React.FC<Props> = ({ persona, grupo }) => {
         </TableCell>
         <TableCell className="py-2 px-3 text-xs text-slate-600 font-mono">
           {persona.numero_documento}
+        </TableCell>
+        <TableCell className="py-2 px-3 text-xs text-slate-600 font-mono">
+          {persona.perfil?.nombre}
         </TableCell>
         <TableCell className="py-2 px-3 text-xs text-slate-500 whitespace-normal">
           {persona.email}
@@ -105,7 +117,6 @@ export const PersonaRow: React.FC<Props> = ({ persona, grupo }) => {
             )}
           </div>
         </TableCell>
-        {/* Altura de los botones de acciones alineados */}
         <TableCell className="py-2 px-3 text-right">
           <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger asChild>
@@ -126,6 +137,20 @@ export const PersonaRow: React.FC<Props> = ({ persona, grupo }) => {
                 Acciones
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-slate-100" />
+
+              {/* Opción condicional exclusiva para apoderados */}
+              {esApoderado && (
+                <>
+                  <DropdownMenuItem
+                    onClick={handleOpenVincularModal}
+                    className="cursor-pointer hover:bg-blue-50 hover:text-blue-700 rounded-sm py-1.5 px-2 flex items-center gap-2 text-slate-700 font-medium transition-colors"
+                  >
+                    <Users className="h-3.5 w-3.5 text-blue-500" />
+                    <span>Vincular Hijos</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-slate-100" />
+                </>
+              )}
 
               <DropdownMenuItem
                 onClick={handleShowDetail}
@@ -162,6 +187,15 @@ export const PersonaRow: React.FC<Props> = ({ persona, grupo }) => {
           />
         }
       />
+
+      {/* Modal / Formulario para Vincular Hijos */}
+      {esApoderado && (
+        <VinculaParienteModal
+          isOpen={isVincularModalOpen}
+          onClose={() => setIsVincularModalOpen(false)}
+          apoderado={persona}
+        />
+      )}
     </>
   );
 };

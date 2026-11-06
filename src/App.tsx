@@ -30,6 +30,8 @@ import { MisCertificadosListPage } from "./components/Alumno/Page/MisCertificado
 import { PlantillaListPage } from "./components/Plantilla/Page/PlantillaListPage";
 import { PlantillaFormPage } from "./components/Plantilla/Page/PlantillaFormPage";
 import { MantenimientoPage } from "./components/Mantenimiento/MantenimientoPage";
+import { CursoListPage } from "./components/Curso/Page/CursoListPage";
+import { CursoFormPage } from "./components/Curso/Page/CursoFormPage";
 
 function App() {
   const [sideBarCollapsed, setSideBarCollapsed] = useState(false);
@@ -144,6 +146,13 @@ function App() {
                     <Route
                       path="/programa-academico/editar/:id"
                       element={<ProgramaFormPage />}
+                    />
+
+                    <Route path="/curso" element={<CursoListPage />} />
+                    <Route path="/curso/nuevo" element={<CursoFormPage />} />
+                    <Route
+                      path="/curso/editar/:id"
+                      element={<CursoFormPage />}
                     />
 
                     <Route path="/modulo" element={<ModuloListPage />} />

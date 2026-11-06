@@ -1,6 +1,13 @@
 import { Persona, PersonaResponse } from "@/interfaces/IPersona";
 import apiClient from "./apiClient";
 
+export interface VincularHijosPayload {
+    hijos: {
+        id_alumno: number;
+        codigo_tipo_parentesco: number;
+    }[];
+}
+
 export const getAll = async (nombreGrupo: string): Promise<PersonaResponse> => {
     try {
         const urlApi = `/personas/grupo/${nombreGrupo}`
@@ -75,6 +82,32 @@ export const getById = async (id: number): Promise<PersonaResponse> => {
         return { result: false, data: [], error: errorMessage, status: 500 }
     }
 }
+
+export const vincularHijos = async (id: number, payload: VincularHijosPayload): Promise<PersonaResponse> => {
+    try {
+        const urlApi = `/personas/${id}/vincular-hijos`;
+        console.log('---- vincularHijos personaRepository ----');
+        console.log({ urlApi, payload });
+
+        const response = await apiClient.post(urlApi, payload);
+
+        console.log('---- response vincularHijos personaRepository ----');
+        console.log({ response });
+
+        const { data: { result, message, status, code } } = response;
+
+        return {
+            result,
+            message,
+            status,
+            code
+        };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        console.log('errorMessage', errorMessage);
+        return { result: false, data: [], error: errorMessage, status: 500 };
+    }
+};
 
 export const create = async (payload: Persona): Promise<PersonaResponse> => {
     try {

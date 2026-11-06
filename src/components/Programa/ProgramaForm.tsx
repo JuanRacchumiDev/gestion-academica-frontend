@@ -311,71 +311,71 @@ export const ProgramaForm = () => {
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const formData = new FormData();
+
+    // console.log("---- values onSubmit ProgramaForm ----");
+    // console.log({ values });
+
+    const {
+      codigoSegmento,
+      codigoTipoPrograma,
+      titulo,
+      fechaInicio,
+      fechaFinal,
+      duracion,
+      horasAcademicas,
+      modulos,
+      plan_file,
+      temario,
+      modalidad,
+    } = values;
+
+    const fechaInicioStr = format(fechaInicio, "yyyy-MM-dd");
+    const fechaFinalStr = format(fechaFinal, "yyyy-MM-dd");
+
+    // console.log({ fechaInicioStr });
+    // console.log({ fechaFinalStr });
+
+    if (isEditMode) {
+      formData.append("_method", "PATCH");
+    }
+
+    formData.append("codigo_segmento", codigoSegmento);
+    formData.append("codigo_tipoprograma", codigoTipoPrograma);
+    formData.append("titulo", titulo);
+    formData.append("fecha_inicio", fechaInicioStr);
+    formData.append("fecha_final", fechaFinalStr);
+    formData.append("duracion", duracion || "");
+
+    if (horasAcademicas !== null && horasAcademicas !== undefined) {
+      formData.append("horas_academicas", horasAcademicas.toString());
+    } else {
+      formData.append("horas_academicas", "");
+    }
+
+    formData.append("numero_modulos", modulos.toString());
+    formData.append("is_vigente", "1");
+    formData.append("estado", "1");
+    formData.append("modalidad", modalidad || "");
+    formData.append("temario", temario?.trim() || "");
+
+    // Agregar el archivo si existe
+    if (plan_file) {
+      formData.append("plan", plan_file);
+    }
+
+    // console.log("--- formData ----");
+    // console.log({ formData });
+
+    let response = null;
+
+    const config = {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    };
+
     try {
-      const formData = new FormData();
-
-      // console.log("---- values onSubmit ProgramaForm ----");
-      // console.log({ values });
-
-      const {
-        codigoSegmento,
-        codigoTipoPrograma,
-        titulo,
-        fechaInicio,
-        fechaFinal,
-        duracion,
-        horasAcademicas,
-        modulos,
-        plan_file,
-        temario,
-        modalidad,
-      } = values;
-
-      const fechaInicioStr = format(fechaInicio, "yyyy-MM-dd");
-      const fechaFinalStr = format(fechaFinal, "yyyy-MM-dd");
-
-      // console.log({ fechaInicioStr });
-      // console.log({ fechaFinalStr });
-
-      if (isEditMode) {
-        formData.append("_method", "PATCH");
-      }
-
-      formData.append("codigo_segmento", codigoSegmento);
-      formData.append("codigo_tipoprograma", codigoTipoPrograma);
-      formData.append("titulo", titulo);
-      formData.append("fecha_inicio", fechaInicioStr);
-      formData.append("fecha_final", fechaFinalStr);
-      formData.append("duracion", duracion || "");
-
-      if (horasAcademicas !== null && horasAcademicas !== undefined) {
-        formData.append("horas_academicas", horasAcademicas.toString());
-      } else {
-        formData.append("horas_academicas", "");
-      }
-
-      formData.append("numero_modulos", modulos.toString());
-      formData.append("is_vigente", "1");
-      formData.append("estado", "1");
-      formData.append("modalidad", modalidad || "");
-      formData.append("temario", temario?.trim() || "");
-
-      // Agregar el archivo si existe
-      if (plan_file) {
-        formData.append("plan", plan_file);
-      }
-
-      // console.log("--- formData ----");
-      // console.log({ formData });
-
-      let response = null;
-
-      const config = {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      };
-
       // console.log({ isEditMode });
 
       if (isEditMode && id) {
